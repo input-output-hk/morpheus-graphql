@@ -25,7 +25,7 @@ data GQLQueryRoot = GQLQueryRoot
   { fragments      :: FragmentLib
   , queryBody      :: RawOperator
   , inputVariables :: [(Key, Value)]
-  }
+  } deriving (Show)
 
 data GQLRoot a b c = GQLRoot
   { query        :: a

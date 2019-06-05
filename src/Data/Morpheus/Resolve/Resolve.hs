@@ -7,16 +7,19 @@ module Data.Morpheus.Resolve.Resolve
   ) where
 
 import           Control.Monad.Trans.Except                 (ExceptT (..), runExceptT)
-import           Data.Aeson                                 (encode)
+import           Data.Aeson                                 (decode, eitherDecode, encode)
 import qualified Data.ByteString.Lazy.Char8                 as LB (ByteString)
 import           Data.Morpheus.Error.Utils                  (renderErrors)
-import           Data.Morpheus.Parser.Parser                (parseLineBreaks, parseRequest)
+import           Data.Morpheus.Parser.Parser                (parseRequest)
+import qualified Data.Morpheus.Parser.Parser                as Parser
 import           Data.Morpheus.Server.ClientRegister        (GQLState, publishUpdates)
 import           Data.Morpheus.Types.GQLOperator            (GQLMutation (..), GQLQuery (..), GQLSubscription (..))
 import           Data.Morpheus.Types.Internal.AST.Operator  (Operator (..), Operator' (..))
 import           Data.Morpheus.Types.Internal.AST.Selection (SelectionSet)
 import           Data.Morpheus.Types.Internal.Data          (DataTypeLib)
 import           Data.Morpheus.Types.Internal.WebSocket     (InputAction (..), OutputAction (..))
+import           Data.Morpheus.Types.Request                (GQLRequest)
+import qualified Data.Morpheus.Types.Request                as R
 import           Data.Morpheus.Types.Resolver               (WithEffect (..))
 import           Data.Morpheus.Types.Response               (GQLResponse (..))
 import           Data.Morpheus.Types.Types                  (GQLRoot (..))
@@ -25,6 +28,10 @@ import           Data.Text                                  (Text)
 import qualified Data.Text.Lazy                             as LT (fromStrict, toStrict)
 import           Data.Text.Lazy.Encoding                    (decodeUtf8, encodeUtf8)
 import           Data.UUID.V4                               (nextRandom)
+import           System.IO                                  (hPutStr, stderr)
+import           Text.Megaparsec                            (ParseError, ParseErrorBundle (ParseErrorBundle), SourcePos,
+                                                             attachSourcePos, bundleErrors, bundlePosState, eof,
+                                                             errorOffset, label, parseErrorPretty, runParser)
 
 schema :: (GQLQuery a, GQLMutation b, GQLSubscription c) => a -> b -> c -> DataTypeLib
 schema queryRes mutationRes subscriptionRes =
@@ -42,8 +49,14 @@ encodeToText = bsToText . encode
 resolve :: (GQLQuery a, GQLMutation b, GQLSubscription c) => GQLRoot a b c -> LB.ByteString -> IO GQLResponse
 resolve rootResolver request = do
   value <- runExceptT _resolve
+  let parsed :: Either String GQLRequest
+      parsed = eitherDecode request
+  --hPutStr stderr $ "INPUT:   " <> show (parseRequest request)
+  hPutStr stderr $ "DECODED: " <> show parsed <> "\n"
+  hPutStr stderr $ "HARSED:  " <> show (runParser Parser.request "<query>" . R.query <$> parsed) <> "\n\n"
+  hPutStr stderr $ "PARSED:\n" <> show (parseRequest request) <> "\n\n"
   case value of
-    Left x  -> pure $ Errors $ renderErrors (parseLineBreaks request) x
+    Left x  -> pure $ Errors $ renderErrors x
     Right x -> pure $ Data x
   where
     _resolve = do
@@ -63,10 +76,10 @@ resolveStream ::
 resolveStream rootResolver (SocketInput id' request) = do
   value <- runExceptT _resolve
   case value of
-    Left x -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS request) x
+    Left x                             -> pure $ NoEffect $ encodeToText $ Errors $ renderErrors x
     Right (PublishMutation pid' x' y') -> pure $ PublishMutation pid' (encodeToText $ Data x') y'
-    Right (InitSubscription x' y' z') -> pure $ InitSubscription x' y' z'
-    Right (NoEffect x') -> pure $ NoEffect (encodeToText $ Data x')
+    Right (InitSubscription x' y' z')  -> pure $ InitSubscription x' y' z'
+    Right (NoEffect x')                -> pure $ NoEffect (encodeToText $ Data x')
   where
     _resolve = (ExceptT $ pure (parseRequest (toLBS request) >>= validateRequest gqlSchema)) >>= resolveOperator
       where
@@ -81,7 +94,7 @@ resolveStream rootResolver (SocketInput id' request) = do
             sRes selection' = do
               value <- runExceptT (encodeSubscription subscriptionRes selection')
               case value of
-                Left x -> pure $ encodeToText $ Errors $ renderErrors (parseLineBreaks $ toLBS request) x
+                Left x                  -> pure $ encodeToText $ Errors $ renderErrors x
                 Right (WithEffect _ x') -> pure (encodeToText $ Data x')
         resolveOperator (Subscription operator') = do
           WithEffect channels _ <- encodeSubscription subscriptionRes $ operatorSelection operator'

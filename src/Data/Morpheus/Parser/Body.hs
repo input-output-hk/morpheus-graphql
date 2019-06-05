@@ -6,29 +6,33 @@ module Data.Morpheus.Parser.Body
   ) where
 
 import           Control.Applicative                           ((<|>))
-import           Data.Attoparsec.Text                          (Parser, char, sepBy, skipSpace)
 import           Data.Char                                     (isAlpha)
+import           Data.Functor                                  (void)
 import           Data.Morpheus.Parser.Arguments                (maybeArguments)
-import           Data.Morpheus.Parser.Internal                 (getPosition, syntaxFail)
+import           Data.Morpheus.Parser.Internal                 (Parser)
 import           Data.Morpheus.Parser.Primitive                (qualifier, token)
 import           Data.Morpheus.Parser.Terms                    (lookAheadChar, onType, parseAssignment, parseChar,
                                                                 parseWhenChar, spreadLiteral)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
-import           Data.Text                                     (Text, pack)
+import           Data.Text                                     (pack, Text)
+import           System.IO                                     (hPutStr)
+import           Text.Megaparsec                               (try, sepEndBy, getSourcePos, label, lookAhead, many, oneOf, sepBy)
+import           Text.Megaparsec.Char                          (char, letterChar, space)
+import           Text.Megaparsec.Debug                         (dbg)
 
 spread :: Parser (Text, RawSelection)
-spread = do
+spread = dbg "spread" $ label "spread" $ do
   index <- spreadLiteral
-  skipSpace
+  space
   key' <- token
   return (key', Spread $ Reference {referenceName = key', referencePosition = index})
 
 inlineFragment :: Parser (Text, RawSelection)
-inlineFragment = do
+inlineFragment = dbg "InlineFragment" $ label "InlineFragment" $ do
   index <- spreadLiteral
   type' <- onType
-  skipSpace
+  space
   fragmentBody <- entries
   pure
     ( "INLINE_FRAGMENT"
@@ -42,7 +46,7 @@ inlineFragment = do
   - field () {...}
 -}
 parseSelectionField :: Parser (Text, RawSelection)
-parseSelectionField = do
+parseSelectionField = dbg "SelectionField" $ label "SelectionField" $ do
   (name', position') <- qualifier
   arguments' <- maybeArguments
   value' <- parseWhenChar '{' (body arguments') (buildField arguments' position')
@@ -54,36 +58,32 @@ parseSelectionField = do
          RawSelection' {rawSelectionArguments = arguments', rawSelectionRec = (), rawSelectionPosition = position'})
 
 alias :: Parser (Text, RawSelection)
-alias = do
+alias = dbg "alias" $ label "alias" $ do
   ((name', position'), selection') <- parseAssignment qualifier parseSelectionField
   return (name', RawAlias {rawAliasPosition = position', rawAliasSelection = selection'})
 
---isSep :: Char -> Bool
---isSep = (`elem` [',', ' ', '\n', '\t'])
 bodySeparator :: Parser Char
-bodySeparator = char ',' <|> char ' ' <|> char '\n' <|> char '\t'
+bodySeparator = label "bodySeparator" $ oneOf [',', ' ', '\n', '\t']
 
 entries :: Parser RawSelectionSet
-entries = do
+entries = dbg "entries" $ label "entries" $ do
   parseChar '{'
-  skipSpace
+  space
   entries' <- entry `sepBy` bodySeparator
-  skipSpace
+  space
   parseChar '}'
   return entries'
   where
-    entry = do
-      char' <- lookAheadChar
-      case char' of
-        '.' -> inlineFragment <|> spread
-        ch'
-          | isAlpha ch' || ch' == '_' -> alias <|> parseSelectionField
-        ch' -> syntaxFail (pack $ "unknown Character on selection: \"" ++ [ch'] ++ "\"")
+    entry = dbg "entry" $ label "entry" $ do
+      (try (lookAhead (char '.')) *> (try inlineFragment <|> spread))
+      <|>
+      (try (lookAhead (letterChar <|> char '_')) *> (try alias <|> try parseSelectionField))
 
+    -- TODO Learn about `try` and `<|>` - it doesn't have the semantics you assume it does.
 body :: RawArguments -> Parser RawSelection
-body args = do
-  skipSpace
-  index <- getPosition
+body args = label "body" $ do
+  space
+  index <- getSourcePos
   entries' <- entries
   return
     (RawSelectionSet $

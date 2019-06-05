@@ -24,6 +24,7 @@ data Variable = Variable
   , variableTypeWrappers :: [DataTypeWrapper]
   , variablePosition     :: Position
   }
+  deriving (Show)
 
 type VariableDefinitions = Collection Variable
 
@@ -37,8 +38,10 @@ data Operator' args sel = Operator'
   , operatorSelection :: sel
   , operatorPosition  :: Position
   }
+  deriving (Show)
 
 data Operator args sel
   = Query (Operator' args sel)
   | Mutation (Operator' args sel)
   | Subscription (Operator' args sel)
+  deriving (Show)

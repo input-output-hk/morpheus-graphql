@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs             #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Morpheus.Parser.Value
@@ -6,13 +7,15 @@ module Data.Morpheus.Parser.Value
   ) where
 
 import           Control.Applicative                (many, (<|>))
-import           Data.Attoparsec.Text               (Parser, char, choice, notChar, scientific, sepBy, skipSpace,
-                                                     string)
 import           Data.Functor                       (($>))
+import           Data.Morpheus.Parser.Internal      (Parser)
 import           Data.Morpheus.Parser.Primitive     (token)
 import           Data.Morpheus.Parser.Terms         (parseAssignment)
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..), Value (..), decodeScientific)
 import           Data.Text                          (pack)
+import           Text.Megaparsec                    (label, anySingleBut, choice, sepBy)
+import           Text.Megaparsec.Char               (char, space, string)
+import           Text.Megaparsec.Char.Lexer         (scientific)
 
 parseValue :: Parser Value
 parseValue = valueNull <|> booleanValue <|> valueNumber <|> stringValue <|> objectValue <|> listValue
@@ -34,7 +37,7 @@ enumValue = Enum <$> token
 
 escaped :: Parser Char
 escaped = do
-  x <- notChar '\"'
+  x <- anySingleBut '\"'
   if x == '\\'
     then choice (zipWith escapeChar codes replacements)
     else pure x
@@ -44,33 +47,33 @@ escaped = do
     escapeChar code replacement = char code >> return replacement
 
 stringValue :: Parser Value
-stringValue = do
+stringValue = label "stringValue" $ do
   _ <- char '"'
   value <- many escaped
   _ <- char '"'
   pure $ Scalar $ String $ pack value
 
 listValue :: Parser Value
-listValue = do
-  skipSpace
+listValue = label "listValue" $ do
+  space
   _ <- char '['
-  skipSpace
+  space
   entries' <-
-    (do skipSpace
+    (do space
         val <- parseValue
-        skipSpace
+        space
         return val) `sepBy`
     char ','
-  skipSpace
+  space
   _ <- char ']'
   return (List entries')
 
 objectValue :: Parser Value
-objectValue = do
-  skipSpace
+objectValue = label "objectValue" $ do
+  space
   _ <- char '{'
-  skipSpace
+  space
   entries' <- parseAssignment token parseValue `sepBy` char ','
-  skipSpace
+  space
   _ <- char '}'
   return (Object entries')
