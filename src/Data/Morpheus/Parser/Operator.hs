@@ -5,30 +5,29 @@ module Data.Morpheus.Parser.Operator
   , parseOperator
   ) where
 
-import           Control.Applicative                       ((<|>))
-import           Data.Attoparsec.Text                      (Parser, char, skipSpace, string, try, (<?>))
 import           Data.Functor                              (($>))
 import           Data.Morpheus.Parser.Body                 (entries)
-import           Data.Morpheus.Parser.Internal             (getPosition)
+import           Data.Morpheus.Parser.Internal             (Parser)
 import           Data.Morpheus.Parser.Primitive            (token, variable)
-import           Data.Morpheus.Parser.Terms                (nonNUll, parseAssignment, parseChar, parseMaybeTuple)
+import           Data.Morpheus.Parser.Terms                (nonNull, parseAssignment, parseChar, parseMaybeTuple)
 import           Data.Morpheus.Types.Internal.AST.Operator (Operator (..), Operator' (..), RawOperator, RawOperator',
                                                             Variable (..))
 import           Data.Morpheus.Types.Internal.Data         (DataTypeWrapper (..))
 import           Data.Text                                 (Text)
+import           Text.Megaparsec                           (getSourcePos, label, try, (<?>), (<|>))
+import           Text.Megaparsec.Char                      (char, space, string)
 
 wrapMock :: Parser ([DataTypeWrapper], Text)
-wrapMock = skipSpace >> token >>= \x -> pure ([], x)
+wrapMock = space >> token >>= \x -> pure ([], x)
 
 insideList :: Parser ([DataTypeWrapper], Text)
 insideList = do
-  skipSpace
   _ <- char '['
-  skipSpace
+  space
   (list, name) <- try wrapMock <|> insideList
-  skipSpace
-  nonNull' <- nonNUll
-  skipSpace
+  space
+  nonNull' <- nonNull
+  space
   _ <- char ']'
   return ((ListType : nonNull') ++ list, name)
 
@@ -36,9 +35,9 @@ wrappedSignature :: Parser ([DataTypeWrapper], Text)
 wrappedSignature = try insideList <|> wrapMock
 
 operatorArgument :: Parser (Text, Variable)
-operatorArgument = do
+operatorArgument = label "operatorArgument" $ do
   ((name', position'), (wrappers', type')) <- parseAssignment variable wrappedSignature
-  nonNull' <- nonNUll
+  nonNull' <- nonNull
   pure
     ( name'
     , Variable
@@ -49,24 +48,26 @@ operatorArgument = do
         })
 
 parseOperator :: Parser RawOperator
-parseOperator = do
-  skipSpace
-  pos <- getPosition
+parseOperator = label "operator" $ do
+  pos <- getSourcePos
   kind' <- operatorKind
   parseChar ' '
-  skipSpace
+  space
   operatorName' <- token
+  space
   variables <- parseMaybeTuple operatorArgument
-  skipSpace
+  space
   sel <- entries
   pure (kind' $ Operator' operatorName' variables sel pos)
 
 parseAnonymousQuery :: Parser RawOperator
-parseAnonymousQuery = do
-  skipSpace
-  position' <- getPosition
+parseAnonymousQuery = label "AnonymousQuery" $ do
+  position' <- getSourcePos
   selection' <- entries
   pure (Query $ Operator' "" [] selection' position') <?> "can't parse AnonymousQuery"
 
 operatorKind :: Parser (RawOperator' -> RawOperator)
-operatorKind = (string "query" $> Query) <|> (string "mutation" $> Mutation) <|> (string "subscription" $> Subscription)
+operatorKind = label "operatorKind" $
+  (string "query" $> Query)
+  <|> (string "mutation" $> Mutation)
+  <|> (string "subscription" $> Subscription)

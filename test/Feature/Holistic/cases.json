@@ -54,5 +54,13 @@
   {
     "path": "fragment/cannotBeSpreadOnType",
     "description": "fail when: fragment type is incompatible with object type"
+  },
+  {
+    "path": "parsing/invalidNotNullOperator",
+    "description": "fail when: user supplies '@' instead of '!'"
+  },
+  {
+    "path": "parsing/missingCloseBrace",
+    "description": "fail when: user misses out a closing '}'"
   }
 ]
