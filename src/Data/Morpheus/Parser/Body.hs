@@ -13,8 +13,10 @@ import           Data.Morpheus.Parser.Terms                    (onType, parseAss
 import           Data.Morpheus.Types.Internal.AST.RawSelection (Fragment (..), RawArguments, RawSelection (..),
                                                                 RawSelection' (..), RawSelectionSet, Reference (..))
 import           Data.Text                                     (Text)
-import           Text.Megaparsec                               (getSourcePos, label, many, oneOf, sepEndBy, try, (<|>))
+import           Text.Megaparsec                               (getSourcePos, label, many, manyTill, oneOf, sepEndBy,
+                                                                try, (<|>))
 import           Text.Megaparsec.Char                          (space)
+import           Text.Megaparsec.Debug                         (dbg)
 
 spread :: Parser (Text, RawSelection)
 spread = label "spread" $ do
@@ -48,6 +50,7 @@ parseSelectionField = label "SelectionField" $ do
   arguments' <- maybeArguments
   space
   value' <- parseWhenChar '{' (space *> body arguments') (buildField arguments' position')
+  space
   return (name', value')
   where
     buildField arguments' position' =
@@ -67,16 +70,15 @@ entries :: Parser RawSelectionSet
 entries = label "entries" $ do
   parseChar '{'
   space
-  entries' <- entry `sepEndBy` bodySeparator
+  entries' <- manyTill entry (parseChar '}')
   space
-  parseChar '}'
   return entries'
   where
-    entry = label "entry" $ do
-      try inlineFragment
-      <|> try spread
-      <|> try alias
-      <|> try parseSelectionField
+    entry = dbg "entry" $ label "entry" $ do
+      -- entry <- inlineFragment <|> spread <|> alias <|> parseSelectionField
+      entry <- parseSelectionField
+      space
+      return entry
 
 
 body :: RawArguments -> Parser RawSelection

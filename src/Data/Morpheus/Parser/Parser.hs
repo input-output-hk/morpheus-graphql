@@ -29,6 +29,7 @@ import           Text.Megaparsec.Char                    (space)
 
 request :: Parser GQLQueryRoot
 request = label "GQLQueryRoot" $ do
+  space
   operator' <- try parseAnonymousQuery <|> parseOperator
   space
   fragmentLib <- fromList <$> many fragment

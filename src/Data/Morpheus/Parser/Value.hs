@@ -72,4 +72,5 @@ objectValue = label "objectValue" $ do
   entries' <- parseAssignment token parseValue `sepBy` char ','
   space
   _ <- char '}'
+  space
   return (Object entries')
