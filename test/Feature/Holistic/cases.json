@@ -62,5 +62,13 @@
   {
     "path": "parsing/missingCloseBrace",
     "description": "fail when: user misses out a closing '}'"
+  },
+  {
+    "path": "parsing/generousSpaces",
+    "description": "returns query even when spacing is extremely liberal"
+  },
+  {
+    "path": "parsing/invalidFields",
+    "description": "fail when: there is a spurious '<' character in the list of fields"
   }
 ]
