@@ -9,6 +9,7 @@
 
 module Data.Morpheus.Resolve.Decode where
 
+import           Data.Map                               (Map)
 import           Data.Morpheus.Error.Internal           (internalArgumentError, internalTypeMismatch)
 import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, SCALAR, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.EnumRep (EnumRep (..))

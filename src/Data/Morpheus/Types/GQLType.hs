@@ -27,7 +27,7 @@ import           Data.Morpheus.Types.Internal.Data                 (DataField (.
                                                                     DataLeaf (..), DataOutputField, DataType (..),
                                                                     DataTypeLib, DataTypeWrapper (..), DataValidator,
                                                                     defineType, isTypeDefined)
-import           Data.Morpheus.Types.Resolver                      ((::->))
+import           Data.Morpheus.Types.Resolver                      (Resolver, QUERY)
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
 import           GHC.Generics
@@ -72,19 +72,19 @@ class GQLType a where
 instance GQLType EnumValue where
   typeID _ = "__EnumValue"
 
-instance GQLType Type where
+instance GQLType (Type m) where
   typeID _ = "__Type"
 
-instance GQLType Field where
+instance GQLType (Field m) where
   typeID _ = "__Field"
 
-instance GQLType InputValue where
+instance GQLType (InputValue m) where
   typeID _ = "__InputValue"
 
-instance GQLType Schema where
+instance GQLType (Schema m) where
   typeID _ = "__Schema"
 
-instance GQLType Directive where
+instance GQLType (Directive m) where
   typeID _ = "__Directive"
 
 instance GQLType TypeKind where
@@ -94,6 +94,9 @@ instance GQLType DirectiveLocation where
   typeID _ = "__DirectiveLocation"
 
 instance GQLType Int where
+  typeID _ = "Int"
+
+instance GQLType Integer where
   typeID _ = "Int"
 
 instance GQLType Float where
@@ -111,5 +114,5 @@ instance GQLType a => GQLType (Maybe a) where
 instance GQLType a => GQLType [a] where
   typeID _ = typeID (Proxy @a)
 
-instance GQLType a => GQLType (p ::-> a) where
+instance GQLType a => GQLType (Resolver m QUERY p a) where
   typeID _ = typeID (Proxy @a)

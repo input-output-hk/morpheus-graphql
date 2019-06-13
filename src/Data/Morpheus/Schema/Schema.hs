@@ -12,17 +12,17 @@ import           Data.Morpheus.Types.Internal.Data                 (DataOutputOb
 import           Data.Text                                         (Text)
 import           GHC.Generics                                      (Generic)
 
-type instance KIND Schema = OBJECT
+type instance KIND (Schema m) = OBJECT
 
-data Schema = Schema
-  { types            :: [Type]
-  , queryType        :: Type
-  , mutationType     :: Maybe Type
-  , subscriptionType :: Maybe Type
-  , directives       :: [Directive]
+data Schema m = Schema
+  { types            :: [Type m]
+  , queryType        :: Type m
+  , mutationType     :: Maybe (Type m)
+  , subscriptionType :: Maybe (Type m)
+  , directives       :: [Directive m]
   } deriving (Generic)
 
-convertTypes :: DataTypeLib -> [Type]
+convertTypes :: Monad m => DataTypeLib -> [Type m]
 convertTypes lib' =
   [typeFromObject $ query lib'] ++
   typeFromMaybe (mutation lib') ++
@@ -30,14 +30,14 @@ convertTypes lib' =
   map typeFromObject (object lib') ++
   map typeFromInputObject (inputObject lib') ++ map typeFromLeaf (leaf lib') ++ map typeFromUnion (union lib')
 
-typeFromMaybe :: Maybe (Text, DataOutputObject) -> [Type]
+typeFromMaybe :: Monad m => Maybe (Text, DataOutputObject) -> [Type m]
 typeFromMaybe (Just x) = [typeFromObject x]
 typeFromMaybe Nothing  = []
 
-buildSchemaLinkType :: (Text, DataOutputObject) -> Type
+buildSchemaLinkType :: Monad m => (Text, DataOutputObject) -> Type m
 buildSchemaLinkType (key', _) = createObjectType key' "Query Description" []
 
-initSchema :: DataTypeLib -> Schema
+initSchema :: Monad m => DataTypeLib -> Schema m
 initSchema types' =
   Schema
     { types = convertTypes types'

@@ -17,10 +17,10 @@ import           Network.WebSockets                         (Connection)
 instance Show Connection where
   show = const "Connection"
 
-data OutputAction a
+data OutputAction m a
   = PublishMutation { mutationChannels                 :: [Text]
                     , mutationResponse                 :: a
-                    , currentSubscriptionStateResolver :: SelectionSet -> IO GQLResponse }
+                    , currentSubscriptionStateResolver :: SelectionSet -> m GQLResponse }
   | InitSubscription { subscriptionChannels :: [Text]
                      , subscriptionQuery    :: SelectionSet }
   | NoEffect a

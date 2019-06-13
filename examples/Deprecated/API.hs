@@ -10,8 +10,8 @@ module Deprecated.API
   ) where
 
 import           Data.Morpheus.Kind  (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION)
-import           Data.Morpheus.Types ((::->), (::->>), GQLArgs, GQLMutation, GQLQuery, GQLRootResolver (..),
-                                      GQLScalar (..), GQLSubscription, GQLType (..), ID, Resolver (..),
+import           Data.Morpheus.Types (MUTATION, QUERY, (::->), (::->>), GQLArgs, GQLRootResolver (..),
+                                      GQLScalar (..), GQLType (..), ID, Resolver (..),
                                       ScalarValue (..), withEffect)
 import           Data.Text           (Text, pack)
 import           Deprecated.Model    (JSONAddress, JSONUser, jsonAddress, jsonUser)
@@ -93,9 +93,9 @@ data User = User
 instance GQLType User where
   description _ = "Custom Description for Client Defined User Type"
 
-newtype Query = Query
-  { user :: () ::-> User
-  } deriving (Generic, GQLQuery)
+newtype Query m = Query
+  { user :: Resolver m QUERY () User
+  } deriving (Generic)
 
 fetchAddress :: Euro -> Text -> IO (Either String Address)
 fetchAddress _ streetName = do
@@ -154,17 +154,17 @@ newAddressSubscription :: () ::->> Address
 newAddressSubscription =
   transformAddress "from Subscription" <$> Resolver (const $ withEffect ["UPDATE_ADDRESS"] <$> jsonAddress)
 
-data Mutation = Mutation
-  { createUser    :: () ::->> User
-  , createAddress :: () ::->> Address
-  } deriving (Generic, GQLMutation)
+data Mutation m = Mutation
+  { createUser    :: Resolver m MUTATION () User
+  , createAddress :: Resolver m MUTATION () Address
+  } deriving (Generic)
 
-data Subscription = Subscription
-  { newUser    :: () ::->> User
-  , newAddress :: () ::->> Address
-  } deriving (Generic, GQLSubscription)
+data Subscription m = Subscription
+  { newUser    :: Resolver m MUTATION () User
+  , newAddress :: Resolver m MUTATION () Address
+  } deriving (Generic)
 
-gqlRoot :: GQLRootResolver Query Mutation Subscription
+gqlRoot :: GQLRootResolver IO (Query IO) (Mutation IO) (Subscription IO)
 gqlRoot =
   GQLRootResolver
     { queryResolver = Query {user = resolveUser}

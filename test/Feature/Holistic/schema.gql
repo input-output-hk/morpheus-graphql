@@ -1,0 +1,44 @@
+type CityID {
+  Paris
+  BLN
+  HH
+}
+
+scalar Euro
+
+type Address {
+  city: String!
+  street: String!
+  houseNumber: Int!
+  owner: User
+}
+
+type User {
+  name: String!
+  email: String!
+  address: Address!
+  office: Address!
+  friend: User
+  home: CityID!
+}
+
+type UID {
+  uid: String!
+}
+
+type Coordinates {
+  latitude: Euro!
+  longitude: [UID!]!
+}
+
+type Query {
+  user: User!
+}
+
+type Mutation {
+  createUser(coordinates: Coordinates!, comment: String): User!
+}
+
+type Subscription {
+  newUser(coordinates: Coordinates!, comment: String): User!
+}

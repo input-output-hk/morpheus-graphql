@@ -25,5 +25,5 @@ data Deity = Deity
   , realm    :: Realm
   } deriving (Generic)
 
-dbDeity :: Text -> Maybe Text -> IO (Either String Deity)
-dbDeity _ _ = return $ Right $ Deity {fullName = "Morpheus", power = Just "Shapeshifting", realm = Dream}
+dbDeity :: Monad m => Text -> Maybe Text -> m (Either String Deity)
+dbDeity _ _ = pure $ Right $ Deity {fullName = "Morpheus", power = Just "Shapeshifting", realm = Dream}

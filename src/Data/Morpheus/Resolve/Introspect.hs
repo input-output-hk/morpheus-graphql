@@ -91,7 +91,7 @@ instance Introspect a (KIND a) => Introspect [a] WRAPPER where
   __introspect _ _ = _introspect (Proxy @a)
   __objectField _ _ name = listField (_objectField (Proxy @a) name)
 
-instance (Introspect a (KIND a), Args.GQLArgs p) => Introspect (Resolver c p a) WRAPPER where
+instance (Introspect a (KIND a), Args.GQLArgs p) => Introspect (Resolver m c p a) WRAPPER where
   __introspect _ _ typeLib = resolveTypes typeLib $ inputTypes' ++ [_introspect (Proxy @a)]
     where
       inputTypes' = map snd $ Args.introspect (Proxy @p)

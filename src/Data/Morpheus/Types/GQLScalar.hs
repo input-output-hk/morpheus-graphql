@@ -58,6 +58,11 @@ instance GQLScalar Int where
   parseValue _       = Left ""
   serialize = Int
 
+instance GQLScalar Integer where
+  parseValue (Int x) = pure $ toInteger x
+  parseValue _       = Left ""
+  serialize = Int . fromIntegral
+
 instance GQLScalar Float where
   parseValue (Float x) = pure x
   parseValue _         = Left ""

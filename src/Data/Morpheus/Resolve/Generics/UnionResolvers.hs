@@ -9,7 +9,7 @@ module Data.Morpheus.Resolve.Generics.UnionResolvers
 
 import           Data.Maybe                                 (fromMaybe)
 import           Data.Morpheus.Types.Internal.AST.Selection (Selection, SelectionSet)
-import           Data.Morpheus.Types.Internal.Validation    (ResolveIO)
+import           Data.Morpheus.Types.Internal.Validation    (ResolveT)
 import           Data.Text                                  (Text)
 import           GHC.Generics
 
@@ -17,18 +17,18 @@ import           GHC.Generics
 lookupSelectionByType :: Text -> [(Text, SelectionSet)] -> SelectionSet
 lookupSelectionByType type' sel = fromMaybe [] $ lookup type' sel
 
-class UnionResolvers f res where
-  currentResolver :: f a -> (Text, (Text, Selection) -> ResolveIO res)
+class UnionResolvers m f res where
+  currentResolver :: f a -> (Text, (Text, Selection) -> ResolveT m res)
 
-instance UnionResolvers f res => UnionResolvers (M1 S s f) res where
+instance UnionResolvers m f res => UnionResolvers m (M1 S s f) res where
   currentResolver (M1 x) = currentResolver x
 
-instance UnionResolvers f res => UnionResolvers (M1 D c f) res where
+instance UnionResolvers m f res => UnionResolvers m (M1 D c f) res where
   currentResolver (M1 x) = currentResolver x
 
-instance UnionResolvers f res => UnionResolvers (M1 C c f) res where
+instance UnionResolvers m f res => UnionResolvers m (M1 C c f) res where
   currentResolver (M1 x) = currentResolver x
 
-instance (UnionResolvers a res, UnionResolvers b res) => UnionResolvers (a :+: b) res where
+instance (UnionResolvers m a res, UnionResolvers m b res) => UnionResolvers m (a :+: b) res where
   currentResolver (L1 x) = currentResolver x
   currentResolver (R1 x) = currentResolver x

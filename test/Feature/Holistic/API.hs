@@ -5,14 +5,15 @@
 {-# LANGUAGE TypeOperators     #-}
 
 module Feature.Holistic.API
-  ( api
-  ) where
+  -- ( api
+  -- ) where
+  where
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Kind         (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR)
-import           Data.Morpheus.Types        ((::->), GQLArgs, GQLMutation, GQLQuery, GQLRootResolver (..),
-                                             GQLScalar (..), GQLSubscription, GQLType (..), ScalarValue (..))
+import           Data.Morpheus.Types        (WithEffect, MUTATION, Resolver(Resolver), QUERY, (::->), GQLArgs, GQLRootResolver (..), GQLScalar (..), GQLType (..),
+                                             ScalarValue (..))
 import           Data.Text                  (Text)
 import           GHC.Generics               (Generic)
 
@@ -81,40 +82,42 @@ data User = User
 instance GQLType User where
   description _ = "Custom Description for Client Defined User Type"
 
-newtype Query = Query
-  { user :: () ::-> User
-  } deriving (Generic, GQLQuery)
+newtype Query m = Query
+  { user :: Resolver m QUERY () User
+  } deriving (Generic)
 
-newtype Mutation = Mutation
-  { createUser :: AddressArgs ::-> User
-  } deriving (Generic, GQLMutation)
+newtype Mutation m = Mutation
+  { createUser :: Resolver m MUTATION AddressArgs User
+  } deriving (Generic)
 
-newtype Subscription = Subscription
-  { newUser :: AddressArgs ::-> User
-  } deriving (Generic, GQLSubscription)
+newtype Subscription m = Subscription
+  { newUser :: Resolver m MUTATION AddressArgs User
+  } deriving (Generic)
 
-resolveAddress :: a ::-> Address
+resolveAddress :: Monad m => Resolver m QUERY a Address
 resolveAddress = return Address {city = "", houseNumber = 1, street = "", owner = Nothing}
 
-resolveUser :: a ::-> User
-resolveUser =
-  return $
+testUser :: User
+testUser =
   User
-    { name = "testName"
-    , email = ""
-    , address = resolveAddress
-    , office = resolveAddress
-    , home = HH
-    , friend = return Nothing
-    }
+      { name = "testName"
+      , email = ""
+      , address = resolveAddress
+      , office = resolveAddress
+      , home = HH
+      , friend = return Nothing
+      }
 
-createUserMutation :: AddressArgs ::-> User
-createUserMutation = resolveUser
+resolveUser :: Monad m => Resolver m QUERY () User
+resolveUser = Resolver $ \_ -> return $ return testUser
 
-newUserSubscription :: AddressArgs ::-> User
-newUserSubscription = resolveUser
+createUserMutation :: Monad m => Resolver m MUTATION AddressArgs User
+createUserMutation = Resolver $ \args -> return $ return $ return testUser
 
-api :: ByteString -> IO ByteString
+newUserSubscription :: Monad m => Resolver m MUTATION AddressArgs User
+newUserSubscription = Resolver $ \args -> return $ return $ return testUser
+
+api :: Monad m => ByteString -> m ByteString
 api =
   interpreter
     GQLRootResolver

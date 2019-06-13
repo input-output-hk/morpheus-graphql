@@ -17,7 +17,7 @@ import           Data.Morpheus.Types.GQLType                    (GQLType (..), e
 import           Data.Morpheus.Types.Internal.AST.Selection     (Selection (..))
 import           Data.Morpheus.Types.Internal.Data              (DataField (..), DataInputField, DataOutputField,
                                                                  DataTypeLib, DataTypeWrapper (..))
-import           Data.Morpheus.Types.Internal.Validation        (ResolveIO, Validation)
+import           Data.Morpheus.Types.Internal.Validation        (ResolveT, Validation)
 import           Data.Morpheus.Types.Internal.Value             (Value (..))
 import           Data.Proxy                                     (Proxy (..))
 import           Data.Text                                      (Text)
@@ -28,7 +28,7 @@ type Intro_ a = Proxy a -> DataTypeLib -> DataTypeLib
 
 type Decode_ a = Value -> Validation a
 
-type Encode_ a b = (Text, Selection) -> a -> ResolveIO b
+type Encode_ m a b = (Text, Selection) -> a -> ResolveT m b
 
 type IField_ a = Proxy a -> Text -> DataInputField
 
@@ -44,11 +44,11 @@ type InputObjectConstraint a = (GQL_TYPE a, GDecode Value (Rep a), InputObjectRe
 
 type ObjectConstraint a = (GQL_TYPE a, ObjectRep (Rep a) (Text, DataOutputField))
 
-type EncodeObjectConstraint a b = (DeriveResolvers (Rep a) b, ObjectConstraint a)
+type EncodeObjectConstraint m a b = (DeriveResolvers m (Rep a) b, ObjectConstraint a)
 
 type UnionConstraint a = (GQL_TYPE a, UnionRep (Rep a))
 
-type EncodeUnionConstraint a res = (UnionResolvers (Rep a) res, UnionConstraint a)
+type EncodeUnionConstraint m a res = (UnionResolvers m (Rep a) res, UnionConstraint a)
 
 introspectEnum ::
      forall a. (GQLType a, EnumRep (Rep a))

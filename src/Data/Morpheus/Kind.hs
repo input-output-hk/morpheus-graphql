@@ -34,6 +34,8 @@ type instance KIND Text = SCALAR
 
 type instance KIND Int = SCALAR
 
+type instance KIND Integer = SCALAR
+
 type instance KIND Float = SCALAR
 
 type instance KIND Bool = SCALAR
@@ -42,4 +44,4 @@ type instance KIND (Maybe a) = WRAPPER
 
 type instance KIND [a] = WRAPPER
 
-type instance KIND (Resolver c p a) = WRAPPER
+type instance KIND (Resolver m c p a) = WRAPPER

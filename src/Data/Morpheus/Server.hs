@@ -18,9 +18,9 @@ import           Data.Morpheus.Types.Internal.WebSocket (GQLClient (..), OutputA
 import           Network.WebSockets                     (ServerApp, acceptRequestWith, forkPingThread, receiveData,
                                                          sendTextData)
 
-type GQLAPI = GQLRequest -> IO (OutputAction ByteString)
+type GQLAPI m = GQLRequest -> m (OutputAction m ByteString)
 
-handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction ByteString -> IO ()
+handleGQLResponse :: GQLClient -> GQLState -> Int -> OutputAction IO ByteString -> IO ()
 handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId'} state sessionId' msg =
   case msg of
     PublishMutation { mutationChannels = channels'
@@ -31,7 +31,7 @@ handleGQLResponse GQLClient {clientConnection = connection', clientID = clientId
       addClientSubscription clientId' selection' channels' sessionId' state
     NoEffect response' -> sendTextData connection' response'
 
-queryHandler :: GQLAPI -> GQLClient -> GQLState -> IO ()
+queryHandler :: GQLAPI IO -> GQLClient -> GQLState -> IO ()
 queryHandler interpreter' client'@GQLClient {clientConnection = connection', clientID = id'} state =
   forever handleRequest
   where
@@ -50,7 +50,7 @@ queryHandler interpreter' client'@GQLClient {clientConnection = connection', cli
           where request = GQLRequest {query = query', operationName = name', variables = variables'}
         Right _ -> return ()
 
-gqlSocketApp :: GQLAPI -> GQLState -> ServerApp
+gqlSocketApp :: GQLAPI IO -> GQLState -> ServerApp
 gqlSocketApp interpreter' state pending = do
   connection' <- acceptRequestWith pending apolloProtocol
   forkPingThread connection' 30
