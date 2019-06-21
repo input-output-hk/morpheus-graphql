@@ -10,6 +10,7 @@
 
 module Data.Morpheus.Resolve.Introspect where
 
+import           Data.Map                                 (Map)
 import           Data.Morpheus.Kind                       (ENUM, KIND, OBJECT, SCALAR, UNION, WRAPPER)
 import           Data.Morpheus.Resolve.Generics.ObjectRep (ObjectRep (..), resolveTypes)
 import           Data.Morpheus.Resolve.Generics.UnionRep  (UnionRep (..))
@@ -23,6 +24,7 @@ import           Data.Morpheus.Types.GQLType              (GQLType (..), asObjec
 import           Data.Morpheus.Types.Internal.Data        (DataField (..), DataFullType (..), DataOutputField)
 import           Data.Morpheus.Types.Resolver             (Resolver (..))
 import           Data.Proxy                               (Proxy (..))
+import           Data.Set                                 (Set)
 import           Data.Text                                (Text, pack)
 import           GHC.Generics
 
@@ -87,7 +89,27 @@ instance Introspect a (KIND a) => Introspect (Maybe a) WRAPPER where
   __introspect _ _ = _introspect (Proxy @a)
   __objectField _ _ name = maybeField (_objectField (Proxy @a) name)
 
+instance (Introspect k (KIND k), Introspect v (KIND v), GQLType k, GQLType v) => Introspect (Map k v) WRAPPER where
+  __objectField _ _ = field_ OBJECT (Proxy @(Map k v)) []
+  __introspect _ = updateLib (asObjectType fields') stack'
+    where
+      (fields', stack') = unzip [ (("key", _objectField (Proxy @k) "key"), _introspect (Proxy @k))
+                                , (("value", _objectField (Proxy @v) "value"), _introspect (Proxy @v))
+                                ]
+
+instance (Introspect a (KIND a), Introspect b (KIND b), GQLType a, GQLType b) => Introspect (a, b) WRAPPER where
+  __objectField _ _ = field_ OBJECT (Proxy @(a,b)) []
+  __introspect _ = updateLib (asObjectType fields') stack'
+    where
+      (fields', stack') = unzip [ (("first", _objectField (Proxy @a) "first"), _introspect (Proxy @a))
+                                , (("second", _objectField (Proxy @b) "second"), _introspect (Proxy @b))
+                                ]
+
 instance Introspect a (KIND a) => Introspect [a] WRAPPER where
+  __introspect _ _ = _introspect (Proxy @a)
+  __objectField _ _ name = listField (_objectField (Proxy @a) name)
+
+instance Introspect a (KIND a) => Introspect (Set a) WRAPPER where
   __introspect _ _ = _introspect (Proxy @a)
   __objectField _ _ name = listField (_objectField (Proxy @a) name)
 

@@ -15,6 +15,7 @@ module Data.Morpheus.Types.GQLType
   , inputObjectOf
   ) where
 
+import           Data.Map                                          (Map)
 import           Data.Morpheus.Resolve.Generics.ObjectRep          (resolveTypes)
 import           Data.Morpheus.Resolve.Generics.TypeID             (TypeID, typeId)
 import           Data.Morpheus.Schema.Directive                    (Directive)
@@ -27,7 +28,7 @@ import           Data.Morpheus.Types.Internal.Data                 (DataField (.
                                                                     DataLeaf (..), DataOutputField, DataType (..),
                                                                     DataTypeLib, DataTypeWrapper (..), DataValidator,
                                                                     defineType, isTypeDefined)
-import           Data.Morpheus.Types.Resolver                      (Resolver, QUERY)
+import           Data.Morpheus.Types.Resolver                      (QUERY, Resolver)
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text)
 import           GHC.Generics
@@ -107,6 +108,12 @@ instance GQLType Text where
 
 instance GQLType Bool where
   typeID _ = "Boolean"
+
+instance (GQLType a, GQLType b) => GQLType (a,b) where
+  typeID _ = "Tuple" <> typeID (Proxy @a) <> typeID (Proxy @b)
+
+instance (GQLType k, GQLType v) => GQLType (Map k v) where
+  typeID _ = "Map" <> typeID (Proxy @k) <> typeID (Proxy @v)
 
 instance GQLType a => GQLType (Maybe a) where
   typeID _ = typeID (Proxy @a)

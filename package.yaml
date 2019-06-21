@@ -37,6 +37,10 @@ library:
     - Data.Morpheus.Kind
     - Data.Morpheus.Types
     - Data.Morpheus.Types.GQLArgs
+    - Data.Morpheus.Types.GQLType
+    - Data.Morpheus.Schema.TypeKind
+    - Data.Morpheus.Resolve.Introspect
+    - Data.Morpheus.Resolve.Internal
     - Data.Morpheus.Server
   ghc-options: -Wall
 
