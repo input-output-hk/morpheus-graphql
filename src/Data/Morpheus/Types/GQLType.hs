@@ -111,6 +111,9 @@ instance GQLType DirectiveLocation where
 instance GQLType Int where
   __typeName = const "Int"
 
+instance GQLType Integer where
+  __typeName = const "Int"
+
 instance GQLType Float where
   __typeName = const "Float"
 

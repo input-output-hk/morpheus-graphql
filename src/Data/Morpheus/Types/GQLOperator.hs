@@ -109,6 +109,8 @@ class GQLSubscription m a where
       subscriptionType = initialType {subscription = Just $ operatorType (Proxy @a) "Subscription" fields'}
       (fields', types') = unzip $ objectFieldTypes (Proxy :: Proxy (Rep a))
 
+instance (Monad m, Typeable m) => GQLQuery m ()
+
 instance Monad m => GQLMutation m () where
   encodeMutation _ _ = pure $ pure Null
   mutationSchema _ = return

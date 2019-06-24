@@ -15,6 +15,7 @@ module Data.Morpheus.Resolve.Introspect
   , Introspect(..)
   , InputType
   , OutputType
+  , Context(..)
   ) where
 
 import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION, WRAPPER)

@@ -12,8 +12,8 @@ module Data.Morpheus.Kind
   , KIND
   ) where
 
-import           Data.Morpheus.Types.Resolver (Resolver)
-import           Data.Text                    (Text)
+import           Data.Morpheus.Types.Resolver  (Resolver)
+import           Data.Text                     (Text)
 
 -- | Type Family to associate type to GraphQL Kind
 type family KIND a :: *
