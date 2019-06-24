@@ -101,15 +101,15 @@ instance GQLType User where
 data Query = Query
   { user      :: () ::-> User
   , testUnion :: Maybe TestUnion
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic, GQLQuery IO)
 
 newtype Mutation = Mutation
   { createUser :: AddressArgs ::-> User
-  } deriving (Generic, GQLMutation)
+  } deriving (Generic, GQLMutation IO)
 
 newtype Subscription = Subscription
   { newUser :: AddressArgs ::-> User
-  } deriving (Generic, GQLSubscription)
+  } deriving (Generic, GQLSubscription IO)
 
 resolveAddress :: a ::-> Address
 resolveAddress = return Address {city = "", houseNumber = 1, street = return Nothing}

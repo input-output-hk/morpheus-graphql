@@ -50,4 +50,4 @@ type instance KIND (Maybe a) = WRAPPER
 
 type instance KIND [a] = WRAPPER
 
-type instance KIND (Resolver c p a) = WRAPPER
+type instance KIND (Resolver m c p a) = WRAPPER

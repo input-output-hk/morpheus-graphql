@@ -7,8 +7,8 @@ module Data.Morpheus.Types.Internal.Validation
   , GQLErrors
   , JSONError(..)
   , Validation
-  , ResolveIO
-  , failResolveIO
+  , ResolveT
+  , failResolveT
   , SchemaValidation
   ) where
 
@@ -39,7 +39,7 @@ type Validation a = Either GQLErrors a
 
 type SchemaValidation a = Validation a
 
-type ResolveIO = ExceptT GQLErrors IO
+type ResolveT m = ExceptT GQLErrors m
 
-failResolveIO :: GQLErrors -> ResolveIO a
-failResolveIO = ExceptT . pure . Left
+failResolveT :: Applicative m => GQLErrors -> ResolveT m a
+failResolveT = ExceptT . pure . Left

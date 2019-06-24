@@ -17,48 +17,48 @@ import           Data.Morpheus.Schema.TypeKind     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data (DataField (..), DataFullType (..), DataInputField, DataInputObject,
                                                     DataLeaf (..), DataOutputField, DataOutputObject, DataType (..),
                                                     DataTypeWrapper (..), DataUnion)
-import           Data.Morpheus.Types.Resolver      ((::->))
+import           Data.Morpheus.Types.Resolver      (QUERY, Resolver)
 import           Data.Text                         (Text)
 
-renderType :: (Text, DataFullType) -> Type
+renderType :: Monad m => (Text, DataFullType) -> Type m
 renderType (name', Leaf leaf')           = typeFromLeaf (name', leaf')
 renderType (name', InputObject iObject') = typeFromInputObject (name', iObject')
 renderType (name', OutputObject object') = typeFromObject (name', object')
 renderType (name', Union union')         = typeFromUnion (name', union')
 
-type InputValue = IN.InputValue Type
+type InputValue m = IN.InputValue (Type m)
 
-type Field = F.Field Type
+type Field m = F.Field (Type m)
 
-inputValueFromArg :: (Text, DataInputField) -> InputValue
+inputValueFromArg :: Monad m => (Text, DataInputField) -> InputValue m
 inputValueFromArg (key', input') = IN.createInputValueWith key' (createInputObjectType input')
 
-createInputObjectType :: DataInputField -> Type
+createInputObjectType :: Monad m => DataInputField -> Type m
 createInputObjectType field' = wrap field' $ createType (fieldKind field') (fieldType field') "" $ Just []
 
-wrap :: DataField a -> Type -> Type
+wrap :: Monad m => DataField a -> Type m -> Type m
 wrap field' = wrapRec (fieldTypeWrappers field')
 
-wrapRec :: [DataTypeWrapper] -> Type -> Type
+wrapRec :: Monad m => [DataTypeWrapper] -> Type m -> Type m
 wrapRec xs type' = foldr wrapByTypeWrapper type' xs
 
-wrapByTypeWrapper :: DataTypeWrapper -> Type -> Type
+wrapByTypeWrapper :: Monad m => DataTypeWrapper -> Type m -> Type m
 wrapByTypeWrapper ListType    = wrapAs LIST
 wrapByTypeWrapper NonNullType = wrapAs NON_NULL
 
-fieldFromObjectField :: (Text, DataOutputField) -> Field
+fieldFromObjectField :: Monad m => (Text, DataOutputField) -> Field m
 fieldFromObjectField (key', field'@DataField {fieldType = type', fieldKind = kind', fieldArgs = args'}) =
   F.createFieldWith key' (wrap field' $ createType kind' type' "" $ Just []) (map inputValueFromArg args')
 
-typeFromLeaf :: (Text, DataLeaf) -> Type
+typeFromLeaf :: Monad m => (Text, DataLeaf) -> Type m
 typeFromLeaf (key', LeafScalar DataType {typeDescription = desc'}) = createLeafType SCALAR key' desc' Nothing
 typeFromLeaf (key', LeafEnum DataType {typeDescription = desc', typeData = tags'}) =
   createLeafType ENUM key' desc' (Just $ map createEnumValue tags')
 
-resolveNothing :: a ::-> Maybe b
+resolveNothing :: Monad m => Resolver m QUERY a (Maybe b)
 resolveNothing = return Nothing
 
-createLeafType :: TypeKind -> Text -> Text -> Maybe [EnumValue] -> Type
+createLeafType :: Monad m => TypeKind -> Text -> Text -> Maybe [EnumValue] -> Type m
 createLeafType kind' name' desc' enums' =
   Type
     { kind = kind'
@@ -72,7 +72,7 @@ createLeafType kind' name' desc' enums' =
     , inputFields = Nothing
     }
 
-typeFromUnion :: (Text, DataUnion) -> Type
+typeFromUnion :: Monad m => (Text, DataUnion) -> Type m
 typeFromUnion (name', DataType {typeData = fields', typeDescription = description'}) =
   Type
     { kind = UNION
@@ -86,15 +86,15 @@ typeFromUnion (name', DataType {typeData = fields', typeDescription = descriptio
     , inputFields = Nothing
     }
 
-typeFromObject :: (Text, DataOutputObject) -> Type
+typeFromObject :: Monad m => (Text, DataOutputObject) -> Type m
 typeFromObject (key', DataType {typeData = fields', typeDescription = description'}) =
   createObjectType key' description' (Just $ map fieldFromObjectField $ filter (not . fieldHidden . snd) fields')
 
-typeFromInputObject :: (Text, DataInputObject) -> Type
+typeFromInputObject :: Monad m => (Text, DataInputObject) -> Type m
 typeFromInputObject (key', DataType {typeData = fields', typeDescription = description'}) =
   createInputObject key' description' (map inputValueFromArg fields')
 
-createObjectType :: Text -> Text -> Maybe [Field] -> Type
+createObjectType :: Monad m => Text -> Text -> Maybe [Field m] -> Type m
 createObjectType name' desc' fields' =
   Type
     { kind = OBJECT
@@ -108,7 +108,7 @@ createObjectType name' desc' fields' =
     , inputFields = Nothing
     }
 
-createInputObject :: Text -> Text -> [InputValue] -> Type
+createInputObject :: Monad m => Text -> Text -> [InputValue m] -> Type m
 createInputObject name' desc' fields' =
   Type
     { kind = INPUT_OBJECT
@@ -122,7 +122,7 @@ createInputObject name' desc' fields' =
     , inputFields = Just fields'
     }
 
-createType :: TypeKind -> Text -> Text -> Maybe [Field] -> Type
+createType :: Monad m => TypeKind -> Text -> Text -> Maybe [Field m] -> Type m
 createType kind' name' desc' fields' =
   Type
     { kind = kind'
@@ -136,7 +136,7 @@ createType kind' name' desc' fields' =
     , inputFields = Nothing
     }
 
-wrapAs :: TypeKind -> Type -> Type
+wrapAs :: Monad m => TypeKind -> Type m -> Type m
 wrapAs kind' contentType =
   Type
     { kind = kind'

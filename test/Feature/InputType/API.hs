@@ -34,7 +34,7 @@ data A = A
 
 newtype Query = Query
   { q1 :: A
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic, GQLQuery IO)
 
 api :: ByteString -> IO ByteString
 api =

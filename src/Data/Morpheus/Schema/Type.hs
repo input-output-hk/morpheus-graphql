@@ -12,22 +12,22 @@ import           Data.Morpheus.Schema.EnumValue  (EnumValue)
 import qualified Data.Morpheus.Schema.Field      as F (Field (..))
 import qualified Data.Morpheus.Schema.InputValue as I (InputValue (..))
 import           Data.Morpheus.Schema.TypeKind   (TypeKind)
-import           Data.Morpheus.Types.Resolver    ((::->))
+import           Data.Morpheus.Types.Resolver    (QUERY, Resolver)
 import           Data.Text                       (Text)
 import           GHC.Generics                    (Generic)
 
-type instance KIND Type = OBJECT
+type instance KIND (Type m) = OBJECT
 
-data Type = Type
+data Type m = Type
   { kind          :: TypeKind
   , name          :: Maybe Text
   , description   :: Maybe Text
-  , fields        :: DeprecationArgs ::-> Maybe [F.Field Type]
-  , interfaces    :: Maybe [Type]
-  , possibleTypes :: Maybe [Type]
-  , enumValues    :: DeprecationArgs ::-> Maybe [EnumValue]
-  , inputFields   :: Maybe [I.InputValue Type]
-  , ofType        :: Maybe Type
+  , fields        :: Resolver m QUERY DeprecationArgs (Maybe [F.Field (Type m)])
+  , interfaces    :: Maybe [Type m]
+  , possibleTypes :: Maybe [Type m]
+  , enumValues    :: Resolver m QUERY DeprecationArgs (Maybe [EnumValue])
+  , inputFields   :: Maybe [I.InputValue (Type m)]
+  , ofType        :: Maybe (Type m)
   } deriving (Generic)
 
 newtype DeprecationArgs = DeprecationArgs

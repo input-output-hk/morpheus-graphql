@@ -46,7 +46,7 @@ data AOrB
 data Query = Query
   { union :: () ::-> [AOrB]
   , fc    :: C
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic, GQLQuery IO)
 
 resolveUnion :: () ::-> [AOrB]
 resolveUnion = return [A' A {aText = "at", aInt = 1}, B' B {bText = "bt", bInt = 2}]

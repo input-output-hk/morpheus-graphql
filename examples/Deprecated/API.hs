@@ -105,7 +105,7 @@ data Query = Query
   { user      :: () ::-> User
   , wrappedA1 :: A Int
   , wrappedA2 :: A Text
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic, GQLQuery IO)
 
 fetchAddress :: Euro -> Text -> IO (Either String Address)
 fetchAddress _ streetName = do
@@ -167,14 +167,14 @@ newAddressSubscription =
 data Mutation = Mutation
   { createUser    :: () ::->> User
   , createAddress :: () ::->> Address
-  } deriving (Generic, GQLMutation)
+  } deriving (Generic, GQLMutation IO)
 
 data Subscription = Subscription
   { newUser    :: () ::->> User
   , newAddress :: () ::->> Address
-  } deriving (Generic, GQLSubscription)
+  } deriving (Generic, GQLSubscription IO)
 
-gqlRoot :: GQLRootResolver Query Mutation Subscription
+gqlRoot :: GQLRootResolver IO Query Mutation Subscription
 gqlRoot =
   GQLRootResolver
     { queryResolver = Query {user = resolveUser, wrappedA1 = A 0, wrappedA2 = A ""}

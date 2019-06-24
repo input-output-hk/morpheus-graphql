@@ -32,6 +32,7 @@ main = do
     httpServer :: GQLState -> IO Wai.Application
     httpServer state =
       scottyApp $ do
-        post "/" $ raw =<< (liftIO . interpreter gqlRoot state =<< body)
+        post "/" $ raw =<< do str <- body
+                              liftIO $ interpreter gqlRoot (state, str)
         get "/" $ file "examples/index.html"
         post "/mythology" $ raw =<< (liftIO . mythologyApi =<< body)

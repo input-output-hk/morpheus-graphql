@@ -12,6 +12,9 @@
 
 module Data.Morpheus.Resolve.Introspect
   ( introspectOutputType
+  , Introspect(..)
+  , InputType
+  , OutputType
   ) where
 
 import           Data.Morpheus.Kind                     (ENUM, INPUT_OBJECT, KIND, OBJECT, SCALAR, UNION, WRAPPER)
@@ -179,7 +182,7 @@ instance Introspect a (KIND a) f => Introspect [a] WRAPPER f where
 
 -- | Introspection Of Resolver ' a ::-> b'
 -- introspects 'a' as argument and 'b' as output type
-instance (OutputConstraint a, Args.GQLArgs p) => Introspect (Resolver c p a) WRAPPER OutputType where
+instance (OutputConstraint a, Args.GQLArgs p) => Introspect (Resolver m c p a) WRAPPER OutputType where
   __field _ name = (__field (Context :: OutputOf a) name) {fieldArgs = map fst $ Args.introspect (Proxy @p)}
   introspect _ typeLib = resolveTypes typeLib $ inputTypes' ++ [introspect (Context :: OutputOf a)]
     where

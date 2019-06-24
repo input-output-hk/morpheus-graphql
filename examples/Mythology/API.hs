@@ -17,7 +17,7 @@ import           Mythology.Character.Deity  (Deity (..), dbDeity)
 
 newtype Query = Query
   { deity :: DeityArgs ::-> Deity
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic, GQLQuery IO)
 
 data DeityArgs = DeityArgs
   { name      :: Text -- Required Argument

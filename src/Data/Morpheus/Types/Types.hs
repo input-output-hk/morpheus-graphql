@@ -1,3 +1,4 @@
+{-# LANGUAGE KindSignatures #-}
 module Data.Morpheus.Types.Types
   ( GQLQueryRoot(..)
   , Variables
@@ -9,16 +10,16 @@ import           Data.Map                                      (Map)
 import           Data.Morpheus.Types.Internal.AST.Operator     (RawOperator)
 import           Data.Morpheus.Types.Internal.AST.RawSelection (FragmentLib)
 import           Data.Morpheus.Types.Internal.Base             (Key)
-import           Data.Morpheus.Types.Internal.Validation       (ResolveIO)
+import           Data.Morpheus.Types.Internal.Validation       (ResolveT)
 import           Data.Morpheus.Types.Internal.Value            (Value)
 
 type Variables = Map Key Value
 
-newtype SubscriptionResolver = SubscriptionResolver
-  { unpackSubscriptionResolver :: () -> ResolveIO Value
+newtype SubscriptionResolver m = SubscriptionResolver
+  { unpackSubscriptionResolver :: () -> ResolveT m Value
   }
 
-instance Show SubscriptionResolver where
+instance Show (SubscriptionResolver m) where
   show = const "SubscriptionResolver"
 
 data GQLQueryRoot = GQLQueryRoot
@@ -31,7 +32,7 @@ data GQLQueryRoot = GQLQueryRoot
 --
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you acn use __()__ for it.
-data GQLRootResolver a b c = GQLRootResolver
+data GQLRootResolver (m :: * -> *) a b c = GQLRootResolver
   { queryResolver        :: a
   , mutationResolver     :: b
   , subscriptionResolver :: c

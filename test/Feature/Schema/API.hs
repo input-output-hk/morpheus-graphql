@@ -26,7 +26,7 @@ data A = A
 data Query = Query
   { a1 :: A
   , a2 :: A2.A
-  } deriving (Generic, GQLQuery)
+  } deriving (Generic, GQLQuery IO)
 
 api :: ByteString -> IO ByteString
 api =

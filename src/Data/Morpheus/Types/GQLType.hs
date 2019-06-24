@@ -22,7 +22,7 @@ import           Data.Morpheus.Schema.Schema                       (Schema)
 import           Data.Morpheus.Schema.TypeKind                     (TypeKind (..))
 import           Data.Morpheus.Types.Internal.Data                 (DataField (..), DataFullType (..), DataType (..),
                                                                     DataTypeWrapper (..), defineType, isTypeDefined)
-import           Data.Morpheus.Types.Resolver                      ((::->))
+import           Data.Morpheus.Types.Resolver                      (Resolver, QUERY)
 import           Data.Proxy                                        (Proxy (..))
 import           Data.Text                                         (Text, intercalate, pack)
 import           Data.Typeable                                     (Typeable, splitTyConApp, tyConName, typeRep,
@@ -87,19 +87,19 @@ class GQLType a where
 instance GQLType EnumValue where
   __typeName = const "__EnumValue"
 
-instance GQLType Type where
+instance Typeable m => GQLType (Type m) where
   __typeName = const "__Type"
 
-instance GQLType Field where
+instance Typeable m => GQLType (Field m) where
   __typeName = const "__Field"
 
-instance GQLType InputValue where
+instance Typeable m => GQLType (InputValue m) where
   __typeName = const "__InputValue"
 
-instance GQLType Schema where
+instance Typeable m => GQLType (Schema m) where
   __typeName = const "__Schema"
 
-instance GQLType Directive where
+instance Typeable m => GQLType (Directive m) where
   __typeName = const "__Directive"
 
 instance GQLType TypeKind where
@@ -128,6 +128,6 @@ instance GQLType a => GQLType [a] where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)
 
-instance GQLType a => GQLType (p ::-> a) where
+instance GQLType a => GQLType (Resolver m QUERY p a) where
   __typeName _ = __typeName (Proxy @a)
   __typeFingerprint _ = __typeFingerprint (Proxy @a)

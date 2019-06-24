@@ -5,7 +5,7 @@ module Data.Morpheus.Types
   , (::->>)
   , Resolver(..)
   , ID(..)
-  , GQLType(description)
+  , GQLType(__typeName, description, updateLib)
   , GQLRootResolver(..)
   , GQLScalar(parseValue, serialize)
   , GQLRequest(..)
@@ -15,16 +15,22 @@ module Data.Morpheus.Types
   , GQLQuery
   , GQLSubscription
   , withEffect
+  , QUERY
+  , MUTATION
+  , Introspect(..)
+  , InputType
+  , OutputType
   ) where
 
+import           Data.Morpheus.Resolve.Introspect   (InputType, Introspect (..), OutputType)
 import           Data.Morpheus.Types.GQLArgs        (GQLArgs)
 import           Data.Morpheus.Types.GQLOperator    (GQLMutation, GQLQuery, GQLSubscription)
 import           Data.Morpheus.Types.GQLScalar      (GQLScalar (parseValue, serialize))
-import           Data.Morpheus.Types.GQLType        (GQLType (description))
+import           Data.Morpheus.Types.GQLType        (GQLType (description, updateLib, __typeName))
 import           Data.Morpheus.Types.ID             (ID (..))
 import           Data.Morpheus.Types.Internal.Value (ScalarValue (..))
 import           Data.Morpheus.Types.Request        (GQLRequest (..))
-import           Data.Morpheus.Types.Resolver       ((::->), (::->>), Resolver (..), WithEffect (..))
+import           Data.Morpheus.Types.Resolver       ((::->), (::->>), MUTATION, QUERY, Resolver (..), WithEffect (..))
 import           Data.Morpheus.Types.Response       (GQLResponse (..))
 import           Data.Morpheus.Types.Types          (GQLRootResolver (..))
 import           Data.Text                          (Text)

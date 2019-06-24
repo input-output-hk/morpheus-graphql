@@ -9,6 +9,8 @@ module Data.Morpheus.Types.Resolver
   , (::->>)
   , Resolver(..)
   , WithEffect(..)
+  , QUERY
+  , MUTATION
   ) where
 
 import           Data.Text    (Text)
@@ -25,8 +27,8 @@ type family RESOLVER a b
 --  __a__ is a record of GQL Arguments
 --
 -- __b__ is result
-newtype Resolver t a b = Resolver
-  { unpackResolver :: a -> IO (RESOLVER t b)
+newtype Resolver m t a b = Resolver
+  { unpackResolver :: a -> m (RESOLVER t b)
   } deriving (Generic)
 
 {-
@@ -36,15 +38,15 @@ newtype Resolver t a b = Resolver
 type instance RESOLVER QUERY b = Either String b
 
 -- | resolver without effect
-type a ::-> b = Resolver QUERY a b
+type a ::-> b = Resolver IO QUERY a b
 
-instance Functor (Resolver QUERY a) where
+instance Monad m => Functor (Resolver m QUERY a) where
   fmap func (Resolver resolver) =
     Resolver $ \args -> do
       value <- resolver args
       return (func <$> value)
 
-instance Applicative (Resolver QUERY a) where
+instance Monad m => Applicative (Resolver m QUERY a) where
   pure = Resolver . const . return . pure
   Resolver func <*> Resolver resolver =
     Resolver $ \args -> do
@@ -52,7 +54,7 @@ instance Applicative (Resolver QUERY a) where
       value1 <- resolver args
       return (func1 <*> value1)
 
-instance Monad (Resolver QUERY a) where
+instance Monad m => Monad (Resolver m QUERY a) where
   return = pure
   (Resolver func1) >>= func2 =
     Resolver $ \args -> do
@@ -66,7 +68,7 @@ instance Monad (Resolver QUERY a) where
 -}
 -- | resolver with effects,
 -- used for communication between mutation and subscription
-type a ::->> b = Resolver MUTATION a b
+type a ::->> b = Resolver IO MUTATION a b
 
 type instance RESOLVER MUTATION b = Either String (WithEffect b)
 
@@ -85,7 +87,7 @@ instance Monad WithEffect where
     let WithEffect e2 v2 = func2 v1
     WithEffect (e2 ++ e1) v2
 
-instance Functor (Resolver MUTATION p) where
+instance Monad m => Functor (Resolver m MUTATION p) where
   fmap func (Resolver resolver) =
     Resolver $ \args -> do
       value <- resolver args
@@ -93,7 +95,7 @@ instance Functor (Resolver MUTATION p) where
         Left error' -> return $ Left error'
         Right res'  -> return $ Right (func <$> res')
 
-instance Applicative (Resolver MUTATION p) where
+instance Monad m => Applicative (Resolver m MUTATION p) where
   pure = Resolver . const . return . Right . pure
   Resolver func <*> Resolver resolver =
     Resolver $ \args -> do
@@ -106,7 +108,7 @@ instance Applicative (Resolver MUTATION p) where
             Left error' -> return $ Left error'
             Right v2'   -> return $ Right $ v1 <*> v2'
 
-instance Monad (Resolver MUTATION p) where
+instance Monad m => Monad (Resolver m MUTATION p) where
   return = pure
   (Resolver func1) >>= func2 =
     Resolver $ \args -> do

@@ -12,11 +12,11 @@ import           Data.Morpheus.Schema.Internal.RenderIntrospection (InputValue)
 import           Data.Text                                         (Text)
 import           GHC.Generics                                      (Generic)
 
-type instance KIND Directive = OBJECT
+type instance KIND (Directive m) = OBJECT
 
-data Directive = Directive
+data Directive m = Directive
   { name        :: Text
   , description :: Maybe Text
   , locations   :: [DirectiveLocation]
-  , args        :: [InputValue]
+  , args        :: [InputValue m]
   } deriving (Generic)
